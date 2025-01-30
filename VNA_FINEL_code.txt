@@ -1,0 +1,1105 @@
+from ctk_scrollable_dropdown import CTkScrollableDropdown
+import customtkinter as ctk
+from customtkinter import filedialog
+from CTkMessagebox import CTkMessagebox
+import os,time,datetime
+from CTkListbox import *
+import pyvisa
+from PIL import Image
+import pandas as pd
+import openpyxl
+from openpyxl import Workbook
+from openpyxl.styles import Font
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import PatternFill
+
+
+########################################################################################################################################################################
+class VNA_DisplaySetting():
+    def __init__(self):
+        self.root = ctk.CTk() 
+        ctk.set_appearance_mode("light")
+        self.root.title("AAVIZA ELECTRONICS PRIVATE LIMITED")
+        self.root.geometry("720x680")
+        self.root.maxsize(1400,1000)
+        self.read_model_id = []
+        self.read_marker_id = []
+        self.read_maxnumber_id=[]
+        self.read_minumber_id=[]
+        self.po_value = None
+        self.count_value = None 
+        self.label_markers = []
+        self.entry_frequencies = []
+        self.label_voltages = []
+        self.entry_voltages = []
+        self.frq_save_data=[]
+        self.list_option=[]
+        self.save_data1=[]
+        self.check_list=[]
+        self.parameter_setting_save = set()
+        self.dist = {} 
+        self.markers_frequencies=[]
+        self.markers_voltage=[]
+        self.voltOutput=[]
+        self.list_freq = []
+        self.list_volt = []
+        self.list_sign = []
+        self.list_po=[]
+        self.list_count=[]
+        self.valid_frequencies = []
+        self.valid_voltages = []
+        self.DataRequestCheck = True
+        self.filepath_csv = ""
+        self.selectedValue = ''
+        self.entry_count_1 = ''
+        self.state=0
+        self.max_row = 0
+        self.sample = []
+        self.list_count1=[]
+        self.ports=[]
+        self.remaining_count=10
+        self.temp_dist_po_count={}
+        self.count=0
+        self.list_port_bool=True
+        self.Txt_select_bool=False
+        self.status_save = True
+################################################## MODEL ID######################################################################################3
+        self.path = 'D:\\VNA_MODEL_V2\\Aaviza_Utility\\logo4.png'
+
+        self.update_image()
+  
+
+        icon_path = os.path.join(os.path.dirname(__file__),'D:\\VNA_MODEL_V2\\Aaviza_Utility\\logo1.ico')
+        if os.path.exists(icon_path):
+            self.root.iconbitmap(icon_path)
+        
+        self.get_model = ctk.CTkButton(self.root, text="Model_Num_Id  :", width=100, height=10,font=("Times New Roman", 18, "bold"), fg_color="#DB4035")
+        self.get_model.place(x=10, y=150)
+        self.get_model_ok = ctk.CTkButton(self.root, text="OK", width=10, height=10,font=("Times New Roman", 18, "bold"), fg_color="#DB4035",command=self.updatedModelId)
+        self.get_model_ok.place(x=330, y=150)
+
+
+        self.get_pono = ctk.CTkButton(self.root, text="PONO", width=100, height=10,font=("Times New Roman", 18, "bold"), fg_color="#4073FF")
+        self.get_pono.place(x=400, y=50)
+
+        self.get_entry = ctk.CTkButton(self.root, text="ENCT", width=100, height=10,font=("Times New Roman", 18, "bold"), fg_color="#4073FF")
+        self.get_entry.place(x=632, y=50)
+        
+        self.get_reming = ctk.CTkButton(self.root, text="RECT", width=100, height=10,font=("Times New Roman", 18, "bold"), fg_color="#4073FF")
+        self.get_reming.place(x=865, y=50)
+
+        self.get_pono_entry = ctk.CTkTextbox(self.root, width=130,height=25)
+        self.get_pono_entry.place(x=501, y=50)
+        self.get_entry_count = ctk.CTkTextbox (self.root, width=130, height=25)
+        self.get_entry_count.place(x=733, y=50)
+        self.get_reming_count =ctk.CTkTextbox (self.root, width=130, height=25)
+        self.get_reming_count.place(x=967, y=50)
+
+        self.initialModleIdLoad()
+  
+        self.get_model_number_var = ctk.StringVar(value="Model ID")
+        self.get_model_number = ctk.CTkComboBox(self.root, values = self.read_model_id, variable = self.get_model_number_var)
+        self.get_model_number.place(x=170, y=150)
+        self.drpodowScroll = CTkScrollableDropdown(self.get_model_number,values=self.read_model_id,justify="left",button_color="transparent",hover_color="Grey")
+       
+        self.channel_port= ctk.CTkButton(self.root, text=" Channel_Port     ", width=20, height=30,font=("Times New Roman", 18, "bold"),fg_color="#4073FF")
+        self.channel_port.place(x=10, y=110)
+        
+        self.channel_port_var = ctk.StringVar(value="selecte")
+        self.channel_port = ctk.CTkComboBox(self.root,values=["1","2","1,2"],variable=self.channel_port_var)
+        self.channel_port.set("1")
+        self.channel_port.place(x=170, y=110)
+
+
+
+        self.textbox_port1 = ctk.CTkTextbox(self.root, width=450, height=580, font=("Times New Roman", 14))
+        self.textbox_port2= ctk.CTkTextbox(self.root, width=450, height=580, font=("Times New Roman", 14))
+        
+        # Initial placement but hidden
+        self.textbox_port1.place(x=390, y=100)
+        self.textbox_port2.place(x=850, y=100)
+        
+
+        self.textbox_port1.place_forget()
+        self.textbox_port2.place_forget()
+
+        self.connect_button = ctk.CTkButton(self.root, text=" CONNECT   ", width=200, height=30,font=("Times New Roman", 18, "bold"),fg_color="#4073FF",command=self.open_textbox)
+        self.connect_button.place(x=100, y=260)
+        self.start_button = ctk.CTkButton(self.root, text=" START ", width=200, height=30,font=("Times New Roman", 18, "bold"),fg_color="#4073FF",command=self.Option_Menu)
+
+        self.start_button.place(x=100, y=310)
+        self.stop_button = ctk.CTkButton(self.root, text=" DISCONNECT ", width=200, height=30,font=("Times New Roman", 18, "bold"),fg_color="#4073FF",command=self.disconnect)
+        self.stop_button.place(x=100, y=360)
+        self.root.mainloop()
+
+    
+    def open_textbox(self):
+        selected = self.channel_port_var.get().split(",")
+        self.textbox_port1.place_forget()
+        self.textbox_port2.place_forget()
+        # Show/hide textbox based on selection
+        if "1" in selected:
+            self.textbox_port1.place(x=390, y=100)
+        else:
+            self.textbox_port1.place_forget()
+        
+        if "2" in selected:
+            self.textbox_port2.place(x=850, y=100)
+        else:
+            self.textbox_port2.place_forget()
+        
+        self.py_visa()
+
+    def py_visa(self):
+        self.connect_button.configure(state=ctk.DISABLED)
+
+       
+        try:
+            VNA_IP = "127.0.0.1"  # IP address of the VNA
+            PORT = 5001  # Communication port
+            self.rm = pyvisa.ResourceManager()  # Initialize PyVISA Resource Manager
+     
+            resource_string = f"TCPIP::{VNA_IP}::{PORT}::SOCKET"
+            # Open connection to the instrument
+            self.MS46122B = self.rm.open_resource(resource_string)
+            # Query and display VNA identity
+            vna_id = self.MS46122B.query("*IDN?")
+            #self.MS46122B.write('*RST\n')
+            self.textbox_port1.insert(ctk.END, f"Connected to: {resource_string}\n")
+            self.textbox_port1.insert(ctk.END, f"VNA Identity: {vna_id}\n")
+            self.textbox_port2.insert(ctk.END, f"Connected to: {resource_string}\n")
+            self.textbox_port2.insert(ctk.END, f"VNA Identity: {vna_id}\n")
+            #self.MS46122B.write(":CALC1:STAT:FRQ 500MHZ")
+            #self.MS46122B.write(":CALC1:END:FRQ 3000MHZ")
+            self.selected_port = self.channel_port.get().strip().upper()
+
+           
+            
+
+            # Ask the user which port to configure
+        except pyvisa.VisaIOError as visa_error:
+            
+            self.msg=CTkMessagebox(title="Error", message="SHOCK LINE ANRITSU APP NOT OPEN ", option_1="OK")
+
+            if self.msg.get()=="OK":
+                self.connect_button.configure(state=ctk.NORMAL)
+
+
+    def get_file_names(self,directory):
+        """Retrieve all file names from a directory and store them in a list."""
+        list_return=[]
+        if not os.path.exists(directory):
+           
+            return []
+        file_list = [file for file in os.listdir(directory) if os.path.isfile(os.path.join(directory, file))]
+        for x in file_list:
+            list_return.append(x.replace('.txt',''))
+        return list_return
+        
+    def initialModleIdLoad(self):
+        directory_path = f"D:\\VNA_MODEL_V2\\datasave\\Model_Settings"
+        self.read_model_id = self.get_file_names(directory_path)
+      
+
+######################################################## Funtions ###################################################################################################################
+    def update_image(self):
+        self.my_image = ctk.CTkImage(light_image=Image.open(self.path), size=(380, 100))
+        self.image_label = ctk.CTkLabel(self.root, image=self.my_image, text="")
+        self.image_label.place(x=5, y=5)
+
+    def change_logo_action(self):
+        self.my_image = ctk.CTkImage(light_image=Image.open(self.path), size=(380, 100))
+        self.image_label = ctk.CTkLabel(self.root, image=self.my_image, text="")
+        self.image_label.place(x=5, y=5)
+        
+    def updatedModelId(self):
+        
+        self.moudel_var=self.get_model_number_var.get()
+        filename = f"{self.moudel_var}.txt"
+        directory = f"D:\\VNA_MODEL_V2\\datasave\\Model_Settings"
+        full_path = os.path.join(directory, filename)
+
+
+        filenamepo = f"{self.moudel_var}.txt"
+        directorypo ="D:\\VNA_MODEL_V2\\datasave\\Model_PO_NO"
+        filepath = os.path.join(directorypo, filenamepo)
+
+        #print("update moudel********************",filepath)
+
+        self.moudel_var=self.get_model_number.get()
+        self.read_model_id.append(self.moudel_var)
+
+
+        self.read_model_id = list(dict.fromkeys(self.read_model_id))
+    
+        if self.moudel_var not in self.read_model_id:
+            self.read_model_id.append(self.moudel_var)
+            
+        else:
+            #print(f"Model ID '{self.moudel_var}' already exists. Skipping addition.")
+            pass
+
+        self.drpodowScroll.configure(values=self.read_model_id,hover_color="Red")
+        
+        if os.path.exists(full_path):
+            ##print("exists ") 
+            overwrite_choice = CTkMessagebox(
+                    title="Info",
+                    message=f"Model file already exists. Do you want to overwrite it?",
+                    option_1="No",
+                    option_2="Yes",
+                ).get()
+            if overwrite_choice == "Yes":
+                self.open_parameter_setting()
+            elif overwrite_choice == "No":
+                self.readPoValues(filepath)
+            self.Option_Menu()
+
+        else:
+            self .list_option.append(self.moudel_var)
+            self.show_messagebox()
+
+    def readPoValues(self,filepath):
+        self.temp_dist_po_count={}
+
+        self.list_po.clear()
+        self.list_count.clear() 
+        with open(filepath, 'r') as file:
+            data = file.read().split("*")  
+        for entry in data:
+            entry = entry.strip()  
+            xlist = entry.split(',')  
+            for i in xlist:
+                i = i.strip() 
+                if i.startswith("_po_number"): 
+                    po_value = i.split(":")[1]
+                    self.list_po.append(po_value.strip())  
+                    
+                elif i.startswith("Entry Count"):  
+                    count_value = i.split(":")[1]
+                    self.list_count.append(count_value.strip())  
+
+
+        for i in range (len(self.list_count)):
+            self.temp_dist_po_count[f"{self.list_po[i]}"] = self.list_count[i]
+        #print("pono_dist",self.temp_dist_po_count)
+        
+    
+    def show_messagebox(self):
+        self.get_model_ok.configure(state=ctk.DISABLED)
+        self.get_model_number.configure(state=ctk.DISABLED)
+        filenamepo = f"{self.moudel_var}.txt"
+        directorypo ="D:\\VNA_MODEL_V2\\datasave\\Model_PO_NO"
+        filepath = os.path.join(directorypo, filenamepo)
+        
+        try:
+            self.msg=CTkMessagebox(title="AAVIZA ELECTRONICS PRIVATE LIMITED",message= "Parameter setting ",option_1="Yes",option_2="No")
+        
+            if self.msg.get() == 'Yes':
+                
+                self.open_parameter_setting()
+               
+            elif self.msg.get() == 'No':
+                self.get_model_ok.configure(state=ctk.NORMAL)
+                self.get_model_number.configure(state=ctk.NORMAL)
+            else:
+                self.get_model_ok.configure(state=ctk.NORMAL)
+                self.get_model_number.configure(state=ctk.NORMAL)
+
+        except Exception as e:
+            pass
+
+    def open_parameter_setting(self):
+        self.open_root = ctk.CTkToplevel(self.root)
+        self.open_root.geometry("720x680")
+        self.open_root.maxsize(500, 600)
+        self.open_root.title("AAVIZA ELECTRONICS PRIVATE LIMITED")
+        
+        # Marker ID Button and Entry
+        self.get_marker = ctk.CTkButton(
+            self.open_root, text="MARKER ID :", width=100, height=10,
+            font=("Times New Roman", 18, "bold"), fg_color="#DB4035"
+        )
+        self.get_marker.place(x=10, y=10)
+
+        self.get_marker_ok = ctk.CTkButton(
+            self.open_root, text="OK", width=10, height=10,
+            font=("Times New Roman", 18, "bold"), fg_color="#DB4035",
+            command=self.marker_setting
+        )
+        self.get_marker_ok.place(x=250, y=10)
+
+        self.marker_entry = ctk.CTkEntry(self.open_root, width=70, placeholder_text="Marker ID")
+        self.marker_entry.place(x=150, y=10)
+        self.marker_entry.bind("<Return>", lambda event: self.get_marker_ok.invoke())
+
+        self.open_root.mainloop()
+
+    def marker_setting(self):
+        try:
+            # Disable the OK button
+            self.get_marker_ok.configure(state=ctk.DISABLED)
+
+            marker_count = int(self.marker_entry.get())
+
+            if marker_count < 8:
+                for i in range(marker_count):
+                    # Create marker labels and frequency entries
+                    self.label_marker = ctk.CTkLabel(self.open_root, text=f"Marker {i + 1}:", font=("Arial", 16))
+                    self.label_marker.place(x=20, y=100 + i * 40)
+                    self.label_markers.append(self.label_marker)
+
+                    self.entry_frequency = ctk.CTkEntry(self.open_root, placeholder_text=f"{i + 1}.E06", width=80)
+                    self.entry_frequency.place(x=100, y=100 + i * 40)
+                    # Bind the entry to move focus to the next entry
+                    self.entry_frequency.bind("<Return>", lambda event, idx=i: self.focus_next_entry(idx, self.entry_frequencies, self.entry_voltages))
+                    self.entry_frequencies.append(self.entry_frequency)
+
+                    # Create voltage labels and entries
+                    self.label_voltage = ctk.CTkLabel(self.open_root, text=f"Voltage {i + 1}:", font=("Arial", 16))
+                    self.label_voltage.place(x=250, y=100 + i * 40)
+                    self.label_voltages.append(self.label_voltage)
+
+                    self.entry_voltage = ctk.CTkEntry(self.open_root, placeholder_text=f"<,0.00{i + 1}", width=80)
+                    self.entry_voltage.place(x=350, y=100 + i * 40)
+                    # Bind the entry to move focus to the next entry
+                    self.entry_voltage.bind("<Return>", lambda event, idx=+i: self.focus_next_entry(idx, self.entry_voltages, self.entry_frequencies))
+                    self.entry_voltages.append(self.entry_voltage)
+
+                # Save button
+                self.save_button = ctk.CTkButton(self.open_root, text="Save", command=self.open_parameter_setting_save_data)
+                self.save_button.place(x=250, y=150 + marker_count * 40 + 20)
+                self.save_button.bind("<Return>", lambda event: self.save_button.invoke())
+
+
+                # Clear button
+                self.clear_data = ctk.CTkButton(self.open_root, text="Clear", command=self.clear_marker)
+                self.clear_data.place(x=10, y=150 + marker_count * 40 + 20)
+
+            else:
+                # Display an error message if the input is out of bounds
+                self.msg = CTkMessagebox(title="Info", message="Marker ID is out of bounds. Please enter a value less than 8.", option_1="OK")
+                self.get_marker_ok.configure(state=ctk.NORMAL)
+
+        except ValueError:
+            # Handle non-integer input
+            self.msg = CTkMessagebox(title="Error", message="Please enter a valid integer for the Marker ID.", option_1="OK")
+            self.get_marker_ok.configure(state=ctk.NORMAL)
+
+    def focus_previous_entry(self, idx, entry_list):
+        """Focus on the previous entry in the list."""
+        if idx > 0:
+            entry_list[idx - 1].focus()
+
+    def focus_next_entry(self, idx, current_list, next_list):
+        """Focus on the next entry in the list."""
+        if idx < len(current_list) - 1:
+            current_list[idx + 1].focus()
+        elif current_list == self.entry_frequencies and len(next_list) < idx:
+            next_list[idx].focus()  # Move to corresponding voltage entry
+        elif current_list == self.entry_voltages and len(next_list) < idx:
+            next_list[idx].focus()  # Move to next voltage entry
+
+           
+            
+    def clear_marker(self):
+        try:
+            self.get_marker_ok.configure(state=ctk.NORMAL)
+            
+            for label in  self.label_markers:
+                label.destroy()
+            for entry in self.entry_frequencies:
+                entry.destroy()
+            for label in self.label_voltages:
+                label.destroy()
+            for entry in self.entry_voltages:
+                entry.destroy()
+            # Clear the list 
+            self.label_markers.clear()
+            self.entry_frequencies.clear()
+            self.label_voltages.clear()
+            self.entry_voltages.clear()
+            self.save_button.destroy()
+            self.clear_data.destroy()
+        except:
+            pass
+
+    
+    def open_parameter_setting_save_data(self):
+        # Collect data from all frequency and voltage entries
+        for i in range(len(self.label_markers)):
+            label_marker_text = self.label_markers[i].cget("text")
+            entry_frequency_value = self.entry_frequencies[i].get().strip()
+            entry_voltage_value = self.entry_voltages[i].get().strip()
+
+            # Store the collected frequency and voltage values in a dictionary
+            self.dist[label_marker_text] = {
+                "frequency": entry_frequency_value,
+                "voltage": entry_voltage_value
+            }
+
+        # Check if all frequency and voltage entries are empty
+        if not any(self.entry_frequencies[i].get().strip() for i in range(len(self.entry_frequencies))) or \
+                not any(self.entry_voltages[i].get().strip() for i in range(len(self.entry_voltages))):
+            CTkMessagebox(title="Error", message="Please enter data", option_1="OK")
+            return
+
+        # Validate frequencies and voltages
+
+
+        for i in range(len(self.entry_frequencies)):
+            freq = self.entry_frequencies[i].get().strip()
+            vol = self.entry_voltages[i].get().strip()
+
+            # Check for empty values
+            if not freq:
+                CTkMessagebox(title="Error", message="Please enter valid frequencies for all fields.", option_1="OK")
+                return
+            if not vol:
+                CTkMessagebox(title="Error", message="Please enter valid voltages for all fields.", option_1="OK")
+                return
+
+            # Check for invalid placeholders in frequencies
+            if freq.endswith(".E07"):
+                CTkMessagebox(title="Error", message="Invalid frequency detected: '.E07' is not allowed.", option_1="OK")
+                return
+
+            # Check for invalid placeholders in voltages
+            if self.check(vol):
+                CTkMessagebox(title="Error", message=f"Invalid voltage '{vol}'. Voltage must be exactly 6 characters.", option_1="OK")
+                return
+
+            # Add valid entries to the lists
+            self.valid_frequencies.append(freq)
+            self.valid_voltages.append(vol)
+
+        # If everything is valid, enable buttons and proceed
+        self.get_model_ok.configure(state=ctk.NORMAL)
+        self.get_model_number.configure(state=ctk.NORMAL)
+
+        # Call the method to create the parameter setting file
+        self.parameter_setting_create_file(0)
+
+        # Clear markers and close the window
+        self.clear_marker()
+        self.open_root.destroy()
+
+    def check(self, voltage):
+        length = len(voltage)
+
+       # Voltage length validation
+        if length < 6:
+            #print(f"Invalid voltage detected (length {length}): Voltage must be at least 6 characters.")
+            return True  # Invalid voltage
+        
+        # Check if voltage starts with "<," or ">,", and if the length is exactly 6
+        if (voltage.startswith("<,") or voltage.startswith(">,") ) and length == 6:
+            self.valid_voltages.append(voltage)
+            #print(f"Valid voltage added: {voltage}")
+            return False  # Valid voltage
+        
+        # Voltage is invalid if it does not meet the criteria
+        #print(f"Invalid voltage detected (length {length}): Voltage must not exceed 6 characters.")
+        return True  # Invalid voltage
+
+
+
+    def parameter_setting_create_file(self,read_Wreite):
+        self.parameter_setting_save =self.get_model_number.get()
+        filename=f"{self.parameter_setting_save}.txt"
+        directory = f"D:\\VNA_MODEL_V2\\datasave\\Model_Settings"
+       
+        os.makedirs(os.path.dirname(directory), exist_ok=True)
+        full_path = os.path.join(directory, filename)
+        # Write data to the file
+        if read_Wreite==0:
+           
+            with open(full_path, 'w') as file:
+                for key_1, item_1 in self.dist.items():
+                    file.write(f"{key_1} ")
+                    for key_2, item_2 in item_1.items():
+                        file.write(f"{key_2}:{item_2} ")
+                    file.write("*\n")  # Add a newline for better readabilit
+        
+        # Read and process data from the file
+        if read_Wreite==1:
+            self.list_freq =[]
+            volt_value=[]
+            self.list_volt=[]
+            volt_sign=[]
+            self.list_sign=[]
+
+            with open(full_path, 'r') as file:
+                data = file.read().split("*")  # Split entries by '*'
+                for entry in data:
+                    entry = entry.strip()  # Remove extra spaces or newlines
+                    if entry:  # Skip empty entries
+                        parts = entry.split()  # Split the line into parts
+                        for part in parts:
+                            if part.startswith("frequency:"):
+                                freq_value = part.split(":")[1]
+                                self.list_freq.append(freq_value.strip())  # Add frequency value to list
+                            elif part.startswith("voltage:"):
+                                volt_sign = part.split(":")[1].split(',')[0].strip()
+                                self.list_sign.append(volt_sign)
+                                volt_value = part.split(":")[1].split(',')[1].strip()
+                                self.list_volt.append(round(float(volt_value.strip()),2))  # Add voltage value to list
+                ##print("count",self.list_freq)
+                ##print("count",self.list_volt)
+
+##################################################################################################################################################################### 
+    def dataRequesting(self,pass_count,pass_fail_list_1,pass_fail_list_2):
+        for port in self.ports:
+            self.MS46122B.write(f':CALC1:PAR{port}:DEF S1{port}')
+            self.MS46122B.write(f":CALC1:PAR{port}:FORM SWR")
+
+            for i, freq in enumerate(self.list_freq, start=1):
+                self.MS46122B.write(f":CALC1:PAR{port}:MARK{i + 1}:X {freq}")
+                time.sleep(0.1)
+                self.voltoutput = self.MS46122B.query(f":CALC1:PAR{port}:MARK{i + 1}:Y?")
+                try:
+                    volt = round(float(self.voltoutput.strip()), 2)
+                except ValueError:
+                    continue
+
+                if port == 1:
+                    self.voltOutput_port1.append(volt)
+                elif port == 2:
+                    self.voltOutput_port2.append(volt)
+
+            self.MS46122B.write(f":CALC1:PAR{port}:DEF USR,A{port},B{port},PORT{port}")
+
+        # Evaluate pass/fail for all measurements
+        for port in self.ports:
+            if port == 1:
+                for j, k in enumerate(self.list_sign):
+                    if k == '<':
+                        if self.voltOutput_port1[j] < self.list_volt[j]:
+                            pass_count[0] += 1
+                            pass_fail_list_1.append("PASS")
+                        else:
+                            
+                            pass_fail_list_1.append("FAIL")
+                    elif k == '>':
+                        if self.voltOutput_port1[j] > self.list_volt[j]:
+                            pass_count[0] += 1
+                            pass_fail_list_1.append("PASS")
+                        else:
+                            
+                            pass_fail_list_1.append("FAIL")
+            if port == 2:
+                for j, k in enumerate(self.list_sign):
+                    if k == '<':
+                        if self.voltOutput_port2[j] < self.list_volt[j]:
+                            pass_count[1] += 1
+                            pass_fail_list_2.append("PASS")
+                        else:
+                            
+                            pass_fail_list_2.append("FAIL")
+                    elif k == '>':
+                        if self.voltOutput_port2[j] > self.list_volt[j]:
+                            pass_count[1] += 1
+                            pass_fail_list_2.append("PASS")
+                        else:
+                            
+                            pass_fail_list_2.append("FAIL")
+
+        return pass_count, pass_fail_list_1, pass_fail_list_2
+
+    def start_buttons(self):
+        
+
+        pass_count = [0, 0]
+        pass_fail_list_1 = []
+        pass_fail_list_2 = []
+        setStart = True
+        countChek = False
+        self.voltOutput_port1 = []
+        self.voltOutput_port2 = []
+
+        # Get selected ports and validate
+        selected_ports = self.channel_port.get().strip()
+        self.ports = []
+
+        for port in selected_ports.split(','):
+            if port.strip() == "1":
+                self.ports.append(1)
+            elif port.strip() == "2":
+                self.ports.append(2)
+
+        if not self.ports:
+            CTkMessagebox(title="Invalid Port Selection", message="Please select valid port(s) (1 or 2)", icon="error").wait_window()
+            return
+
+        try:
+            while setStart and self.list_port_bool:  # Replace recursion with a loop
+
+                
+                if self.DataRequestCheck:
+                    pass_count = [0, 0]
+                    pass_fail_list_1 = []
+                    pass_fail_list_2 = []
+                    date_time = datetime.datetime.now()
+                    self.save_time = date_time.strftime("%H:%M:%S")
+                    self.parameter_setting_create_file(1)
+                    self.DataRequestCheck = False
+                    pass_count, pass_fail_list_1, pass_fail_list_2 = self.dataRequesting(pass_count,pass_fail_list_1,pass_fail_list_2)
+
+                # Determine which textbox to update based on port number
+                for x, port in enumerate(self.ports): 
+                    textbox_to_use = self.textbox_port1 if port == 1 else self.textbox_port2
+
+                    if pass_count[port - 1] == len(self.list_sign):
+                        for i in range(len(self.list_sign)):
+                            if port == 1:
+                                message = f"MARKER:  {i}  FREQ:  {self.list_freq[i]}  VOLT:  {self.voltOutput_port1[i]}  {pass_fail_list_1[i]}   {self.save_time} \n"
+                            else:
+                                message = f"MARKER:  {i}  FREQ:  {self.list_freq[i]}  VOLT:  {self.voltOutput_port2[i]}  {pass_fail_list_2[i]}   {self.save_time} \n"
+                            textbox_to_use.insert(ctk.END, message)
+
+                        self.msg = CTkMessagebox(title="Test Result", icon="check", message="PASS", option_1="Save & Continue Test", option_2="Close")
+                        if self.msg.get() == "Save & Continue Test":
+                            countChek = True
+                            self.DataRequestCheck = True
+                        else:
+                            setStart = False
+                    else:
+                        for i in range(len(self.list_sign)):
+                            if port == 1:
+                                message = f"MARKER:  {i}  FREQ:  {self.list_freq[i]}  VOLT:  {self.voltOutput_port1[i]}  {pass_fail_list_1[i]}   {self.save_time} \n"
+                            else:
+                                message = f"MARKER:  {i}  FREQ:  {self.list_freq[i]}  VOLT:  {self.voltOutput_port2[i]}  {pass_fail_list_2[i]}   {self.save_time} \n"
+                            textbox_to_use.insert(ctk.END, message)
+
+                        self.msg = CTkMessagebox(title="Test Result", icon="cancel", message="FAIL", option_1="Continue Test", option_2="Close")
+                        if self.msg.get() == "Continue Test":
+                            countChek = False
+                            self.DataRequestCheck = True
+                        else:
+                            self.DataRequestCheck = False
+                            setStart = False
+
+                if countChek:
+                    print("countChek pass")
+                    self.save_CSV('PASS')
+
+                self.reset_test_data()
+
+        except Exception as e:
+            print(f".......Error: {e}")
+
+
+    # Helper function to reset test data after each test cycle
+    def reset_test_data(self):
+        self.list_freq = []
+        self.voltOutput_port1 = []
+        self.voltOutput_port2 = []
+        self.list_sign = []
+        self.list_volt = []
+        self.textbox_port1.delete('0.0', 'end')
+        self.textbox_port2.delete('0.0', 'end')
+        
+    def disconnect(self):
+        self.MS46122B.write('*RST\n')
+
+        try:
+            self.MS46122B.close()
+            #print("Connection to VNA closed successfully.")
+
+            # Close the resource manager
+            self.rm.close()
+
+        except Exception as e:
+            #print(f"Error closing the connection: {e}")
+            pass
+        time.sleep(0.1)
+        self.list_po=[] 
+        self.list_count=[]
+        self.get_pono_entry.delete('0.0', 'end')
+        self.get_entry_count.delete('0.0', 'end')
+        self.get_reming_count.delete('0.0', 'end')
+        self.textbox_port1.delete('0.0', 'end')
+        self.textbox_port2.delete('0.0', 'end')
+        self.connect_button.configure(state=ctk.NORMAL)
+      
+
+    def Option_Menu(self):
+
+        self.Optionmenu_root = ctk.CTkToplevel(self.root)
+        self.Optionmenu_root.geometry("300x150")
+        self.Optionmenu_root.title("AAVIZA ELECTRONICS PRIVATE LIMITED")
+        self.optionmenu_var = ctk.StringVar()
+        self.optionmenu = ctk.CTkOptionMenu(self.Optionmenu_root,values=self.read_model_id,command=self.Optionmenu_Callback,variable=self.optionmenu_var)
+        self.optionmenu.pack(pady=20)
+        self.voltOutput=[]
+        self.Optionmenu_root.mainloop()
+
+ 
+    def Optionmenu_Callback(self,choice):
+        #print(choice)
+        self.optionmenu.destroy()
+        self.Optionmenu_root.destroy()
+        self.enter_poid()
+       
+    def enter_poid(self):
+        self.Txt_select_bool=True
+        self.poid_root = ctk.CTkToplevel(self.root)
+        self.poid_root.geometry("480x180")
+        self.poid_root.resizable(False, False)
+        self.poid_root.title("AAVIZA ELECTRONICS PRIVATE LIMITED")
+        self.voltOutput=[]
+        self.order_label = ctk.CTkLabel(self.poid_root, text="PO ID:", width=20, height=30,font=("Times New Roman", 18, "bold"))
+        self.order_label.place(x=0, y=10)
+
+        self.entry_count_label = ctk.CTkLabel(self.poid_root, text="PO COUNT:", width=20, height=30,font=("Times New Roman", 18, "bold"))
+        self.entry_count_label.place(x=0, y=50)
+
+        self.count_entry_1 = ctk.CTkEntry(self.poid_root, width=200,placeholder_text="Enter order ID")
+        self.count_entry_1.place(x=100, y=10)
+
+        self.count_entry_2 = ctk.CTkEntry(self.poid_root, width=200,placeholder_text="Enter Quantity")
+        self.count_entry_2.place(x=100, y=50)
+       
+      
+        self.submit_button = ctk.CTkButton(self.poid_root, text="Save",command=lambda:[self.count_check_int(),self.show_values(), self.po_save_data()])
+        self.submit_button.place(x=310, y=20)
+
+
+        self.PO_combo_var = ctk.StringVar(value="Select")
+        self.PO_combo = ctk.CTkComboBox(self.poid_root, values=self.list_po,command=self.ok_button,variable=self.PO_combo_var)
+        self.PO_combo.set("Select an option")
+        self.PO_combo.place(x=20, y=110)
+        
+        self.poid_root.mainloop()
+    
+
+
+    def ok_button(self, selected_value):
+        self.selectedValue = selected_value
+        self.state = 0
+        self.entry_count_1 =" "
+        if self.selectedValue.strip() != "Select an option":
+            try:
+                # Display selected PO in the textbox
+                self.get_pono_entry.delete('0.0', 'end')
+                self.get_pono_entry.insert(ctk.END, self.selectedValue)
+                self.Txt_select_bool=False
+                # Simulate filling entry count
+                self.get_entry_count.delete('0.0', 'end')
+                self.get_entry_count.insert(ctk.END, self.temp_dist_po_count[f"{self.selectedValue}"])
+                #print("second time ",self.temp_dist_po_count[f"{self.selectedValue}"])
+
+               
+            except Exception as e:
+                #print("Error updating entry fields:", e)
+                pass
+                
+            self.poid_root.destroy()
+            self.start_buttons()  
+    
+    
+    def show_values(self): 
+        """Display the values entered in the entry boxes."""
+
+        if self.status_save:
+            print("Show Value")
+            self.get_modelvalue= self.get_model_number.get()
+            self.entry_count_1 = self.count_entry_1.get()
+            self.state = 1
+            self.entry_count_2 = self.count_entry_2.get() 
+
+        
+            self.save_data1 = {
+                "order_id": self.get_modelvalue,
+                "entry_count": self.entry_count_1,
+                "Entry Count 2":self.entry_count_2
+            }
+            self.poid_root.destroy()
+
+    def count_check_int(self):
+        """Checks if the provided count is an integer."""
+        self.quantity_count = self.count_entry_2.get().strip()  # Get the count from the entry field
+        print("count check", self.quantity_count)
+        if not self.quantity_count.isnumeric(): 
+            self.msg=CTkMessagebox(title="Notice",message="Check number count; it should be an integer (e.g., 100).",option_1="OK")
+            if self.msg.get()=="OK":
+                self.status_save=False
+                self.msg.destroy()
+            #return False
+        else:
+            self.status_save=True
+            print("status Value===========",self.status_save)
+
+      
+    
+    def po_save_data(self):
+
+        if self.status_save:
+            
+            filenamePoNo = f"{self.get_modelvalue}.txt"
+            directoryPONO = f"D:\\VNA_MODEL_V2\\datasave\\Model_PO_NO"
+            os.makedirs(directoryPONO, exist_ok=True)
+            filepath = os.path.join(directoryPONO, filenamePoNo)
+
+            directory_csv = f"D:\\VNA_MODEL_V2\\MODELS\\{self.get_modelvalue}"
+            filename_csv = f"{self.entry_count_1}.xlsx"
+
+            os.makedirs(directory_csv, exist_ok=True)
+            self.filepath_csv = os.path.join(directory_csv, filename_csv)
+
+            print("update poio datasave********************",self.filepath_csv)
+
+            if os.path.isdir(directory_csv): 
+                print("COME in")
+                self.parameter_setting_create_file(1)
+                self.filepath_csv = os.path.join(directory_csv, filename_csv)
+                list_Freq_csv = []
+                list_Freq_csv.append('SLNO')
+                for i in self.list_freq:
+                    list_Freq_csv.append(i)
+                list_Freq_csv.append('RESULT')
+                list_Freq_csv.append('Timestamp')
+            
+                with open(self.filepath_csv, 'w') as file:
+                    pass
+                wb = Workbook()
+                ws = wb.active 
+                bold_font = Font(bold=True)
+                yellow_fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+                for col, value in enumerate(list_Freq_csv, start=1):
+                    cell = ws.cell(row=1, column=col, value=value)
+                    cell.font = bold_font
+                    cell.fill = yellow_fill
+                wb.save(self.filepath_csv)
+            
+            if self.entry_count_1!="" and self.entry_count_2!="":
+                try:
+                    with open(filepath, 'a') as file:
+                        file.write(f"_po_number : {self.entry_count_1},Entry Count: {self.entry_count_2}*\n")
+                
+                except IOError as e:
+                    print(f"Error: could not create file '{filenamePoNo}': {e}")
+                    pass
+                self.readPoValues(filepath)
+
+                if self.list_po:
+                                self.get_pono_entry.delete('0.0','end')
+                                self.get_pono_entry.insert(ctk.END,self.entry_count_1) 
+                            
+                if self.list_count:
+                                self.get_entry_count.delete('0.0', 'end')
+                                self.get_entry_count.insert(ctk.END,self.entry_count_2) 
+                                
+                self.start_buttons()
+            else: 
+                self.msg=CTkMessagebox(title="AAVIZA ELECTRONICS PRIVATE LIMITED",message= "Enter New Po Number And Enter Count Number  ",option_1="Ok")
+
+    def save_CSV(self, strValue):
+        try:
+            self.count += 1
+            list_save_volt1 = []
+            list_save_volt2 = []
+            date_time = datetime.datetime.now()
+            self.save_time = date_time.strftime("%H:%M:%S")
+
+            # Directory and filename setup
+            directory_csv = f"D:\\VNA_MODEL_V2\\MODELS\\{self.optionmenu_var.get()}"
+            if not os.path.isdir(directory_csv):  # Ensure the directory exists
+                os.makedirs(directory_csv)
+
+            filename_csv = f'{self.entry_count_1}.xlsx' if self.state == 1 else f"{self.selectedValue}.xlsx"
+            filepath_csv = os.path.join(directory_csv, filename_csv)
+
+            # Load or create workbook
+            if os.path.exists(filepath_csv):
+                wb = load_workbook(filepath_csv)
+                ws = wb.active
+            else:
+                wb = Workbook()
+                ws = wb.active
+                # Add headers on new file creation
+                header = self.voltOutput_port1 + self.voltOutput_port2 + ['Result', 'Timestamp']
+                ws.append(header)
+
+            # Get the total count of filled rows
+            self.listtotal_count = self.count_filled_rows(filepath_csv, "Sheet")
+
+            # Generate sample labels based on the selected port
+            if self.listtotal_count > 0:
+                sample_label1 = f"sample{self.listtotal_count}"
+                sample_label2 = f"sample{self.listtotal_count + 1}"
+                if self.channel_port.get().strip() == "1,2":
+                    list_save_volt1.append(sample_label1)
+                    list_save_volt2.append(sample_label2)
+                elif self.channel_port.get().strip() == "1":
+                    list_save_volt1.append(sample_label1)
+                elif self.channel_port.get().strip() == "2":
+                    list_save_volt2.append(sample_label2)
+
+            # Handle case where both ports are selected but remaining count conflicts
+            if self.channel_port.get().strip() == "1,2" and self.remaining_count <= 5 and self.count == 1:
+                self.msg = CTkMessagebox(
+                    title="AAVIZA ELECTRONICS PRIVATE LIMITED",
+                    message="Please connect to a single port (1 or 2).",
+                    option_1="Ok"
+                )
+                self.list_port_bool = False
+                if self.msg.get() == "Ok":
+                    self.list_port_bool = True
+                return  # Exit the function if user must reconfigure ports
+
+            # Append data to the workbook for each selected port
+            for port in self.ports:
+                if port == 1:
+                    list_save_volt1.extend(self.voltOutput_port1)
+                    list_save_volt1.append(strValue)
+                    list_save_volt1.append(self.save_time)  # Add timestamp
+                    ws.append(list_save_volt1)
+                elif port == 2:
+                    list_save_volt2.extend(self.voltOutput_port2)
+                    list_save_volt2.append(strValue)
+                    list_save_volt2.append(self.save_time)  # Add timestamp
+                    ws.append(list_save_volt2)
+
+            # Save the workbook
+            wb.save(filepath_csv)
+            print(f"Data successfully saved to {filepath_csv}")
+
+            # Perform additional operations (if required)
+            time.sleep(0.1)
+            self.run_example(filepath_csv)
+
+        except Exception as e:
+            print("An error occurred:", e)
+
+
+    def count_filled_rows(self, file_path, sheet_name):
+        # Check if the file exists
+        if not os.path.exists(file_path):
+            print(f"Error: File '{file_path}' does not exist.")
+            return 0
+
+        try:
+            # Load the workbook and the specified sheet
+            workbook = openpyxl.load_workbook(file_path)
+            if sheet_name not in workbook.sheetnames:
+                #print(f"Error: Sheet '{sheet_name}' does not exist in the workbook.")
+                workbook.close()
+                return 0
+
+            sheet = workbook[sheet_name]
+
+            # Initialize a counter for filled rows
+            self.filled_row_count = 0
+
+            # Iterate through rows and check if they are filled
+            for row in sheet.iter_rows():
+                if any(cell.value is not None for cell in row):  # Check if at least one cell has a value
+                    self.filled_row_count += 1
+                
+
+            # Close the workbook
+            workbook.close()
+            ##print("from excel ",self.filled_row_count)
+
+            return self.filled_row_count
+               
+        except Exception as e:
+            #print(f"Error reading the file: {e}")
+            return 0
+        
+    def run_example(self, file_path):
+        sheet_name = "Sheet"
+        self.listtotal_count = self.count_filled_rows(file_path, sheet_name)
+        print("KEY ",self.entry_count_1) 
+
+        if  self.Txt_select_bool :
+            self.remaining_count = int(self.temp_dist_po_count[f"{self.entry_count_1}"]) - self.listtotal_count
+        else:
+            self.remaining_count = int(self.temp_dist_po_count[f"{self.selectedValue}"]) - self.listtotal_count
+
+
+        self.sample.append(self.listtotal_count)
+        print("total sample",self.listtotal_count)
+        if self.get_reming_count:
+            self.get_reming_count.delete('0.0', 'end')  
+            self.get_reming_count.insert(ctk.END, self.remaining_count)
+        
+       
+        if self.remaining_count == -1:
+            self.msg = CTkMessagebox(title="AAVIZA ELECTRONICS PRIVATE LIMITED",message="Test is completed",option_1="Ok")
+            if self.msg.get()=="Ok":
+                self.list_pono_remove()
+                self.get_reming_count.delete('0.0', 'end')
+                self.get_pono_entry.delete('0.0', 'end')
+                self.get_entry_count.delete('0.0','end')
+                self.textbox_port1.delete('0.0', 'end')
+                self.textbox_port2.delete('0.0', 'end')
+                
+                print("All fields cleared")
+                print("Current list_po:", self.list_po)
+                self.disconnect()
+
+    def list_pono_remove(self):
+        filenamePoNo = f"{self.optionmenu_var.get()}.txt"
+        directoryPONO = f"D:\\VNA_MODEL_V2\\datasave\\Model_PO_NO"
+        os.makedirs(directoryPONO, exist_ok=True)
+        filepath = os.path.join(directoryPONO, filenamePoNo)
+        print(f"Entry Count 1 pono number: {self.entry_count_1}")
+        print(f"Selected Value list pono number {self.selectedValue}")
+
+
+        # Determine which PONO to remove (entry_count_1 or selectedValue)
+   
+    # Determine which PONO to remove (entry_count_1 or selectedValue)
+        pono_to_remove = self.entry_count_1.strip() if self.entry_count_1.strip() else self.selectedValue.strip()
+        print(f"PONO to remove---------->: {pono_to_remove}")
+
+        # Check if the PONO exists in the list
+        if pono_to_remove in [item.strip() for item in self.list_po]:
+            # Filter the list to exclude the PONO to remove
+            previous_count = len(self.list_po)
+            self.list_po = [item for item in self.list_po if item.strip() != pono_to_remove]
+            removed_count = previous_count - len(self.list_po)
+
+            # Debugging: Show how many were removed
+            print(f"PONO(s) removed: {removed_count}")
+
+            # Update the text file to remove lines containing the PONO
+            try:
+                with open(filepath, 'r') as file:
+                    lines = file.readlines()
+                    #print(f"Original file lines: {lines}")
+
+                # Filter out lines containing the removed PONO
+                updated_lines = [line for line in lines if pono_to_remove not in line]
+                print(f"Updated file lines (after removal): {updated_lines}")
+
+                # Write the filtered lines back to the file
+                with open(filepath, 'w') as file:
+                    file.writelines(updated_lines)
+
+                print(f"PONO {pono_to_remove} successfully removed from file.")
+                
+            except IOError as e:
+                print(f"Error accessing file: {e}")
+                CTkMessagebox(title="Error", message=f"Could not update file: {e}", option_1="OK")
+        else:
+            # PONO not found in list, notify user
+            print("PONO not found in the list.")
+            CTkMessagebox(title="Notice", message="PO not found or already removed.", option_1="OK")
+
+        # Update the ComboBox to reflect the new list of POs
+        self.PO_combo.configure(values=self.temp_dist_po_count)
+        self.PO_combo_var.set("Select an option")  # Reset ComboBox to default state
+
+        # Debugging: #print updated list to confirm changes
+        print(f"Updated list data: {self.list_po}")
+
+       
+if __name__=="__main__":
+    try:
+        comm_port= VNA_DisplaySetting()
+        
+    except:
+        pass
